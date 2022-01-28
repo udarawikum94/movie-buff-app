@@ -3,20 +3,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:movie_buff/bloc/get_movie_similar_bloc.dart';
 import 'package:movie_buff/model/movie_main.dart';
+import 'package:movie_buff/model/user.dart';
 import 'package:movie_buff/response/movie_main_response.dart';
 
 import 'package:movie_buff/screen/color_theme.dart' as Theme;
+import 'package:movie_buff/screen/movie_detail_inquiry_screen.dart';
 
 class SimilarMovies extends StatefulWidget {
   final int id;
-  SimilarMovies({required this.id}) : super();
+  final User user;
+  SimilarMovies({required this.id, required this.user}) : super();
   @override
-  _SimilarMoviesState createState() => _SimilarMoviesState(id);
+  _SimilarMoviesState createState() => _SimilarMoviesState(id, user);
 }
 
 class _SimilarMoviesState extends State<SimilarMovies> {
+  final User user;
   final int id;
-  _SimilarMoviesState(this.id);
+  _SimilarMoviesState(this.id, this.user);
   @override
   void initState() {
     super.initState();
@@ -125,7 +129,15 @@ class _SimilarMoviesState extends State<SimilarMovies> {
             return Padding(
               padding: EdgeInsets.only(top: 10.0, bottom: 10.0, right: 15.0),
               child: GestureDetector(
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          MovieDetailInquiryScreen(movie: movies[index], user: user,),
+                    ),
+                  );
+                },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[

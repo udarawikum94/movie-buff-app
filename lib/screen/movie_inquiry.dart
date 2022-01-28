@@ -114,10 +114,10 @@ class _MovieInquiryState extends State<MovieInquiry> {
               ),
             ],
           ),
-          NowPlaying(),
+          NowPlaying(user: user),
           CategoryScreen(user: user,),
           TrendingPersonsList(),
-          BestMovies(),
+          BestMovies(user: user,),
         ],
       ),
     );

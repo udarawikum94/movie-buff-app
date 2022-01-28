@@ -13,7 +13,10 @@ class Owner {
     //if(id!=null) {
     id = mapObj['id'];
     //}
-    companyLogo = mapObj['logo_path'];
+
+    if (mapObj['logo_path']!=null) {
+      companyLogo = mapObj['logo_path'];
+    }
     name = mapObj['name'];
     country = mapObj['origin_country'];
     //return mapObj;

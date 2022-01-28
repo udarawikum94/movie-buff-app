@@ -181,8 +181,6 @@ class ServiceUtil {
       print("9999999999999");
       //print("$apiUrl/movie/$movieId/similar?api_key=8a1227b5735a7322c4a43a461953d4ff&language=en-US");
       Response responseVal = await _dioClient.get('$apiUrl/search/movie', queryParameters: params);
-      print("888888888888888888");
-      print(responseVal.data.toString());
       return MovieMainResponse.convertToMovieMainInfoResponse(responseVal.data, errorValue, data);
     } catch (error, stacktrace) {
       print("Unhandled exception occurred during service invoke : error => $error stackTrace => $stacktrace");

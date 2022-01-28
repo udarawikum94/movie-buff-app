@@ -2,6 +2,7 @@ import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:intl/intl.dart';
 import 'package:movie_buff/model/movie_main.dart';
 import 'package:movie_buff/model/user.dart';
@@ -13,6 +14,7 @@ import 'package:movie_buff/widgets/category.dart';
 import 'package:movie_buff/widgets/movie_buff_rating.dart';
 import 'package:movie_buff/widgets/movie_cover.dart';
 import 'package:movie_buff/widgets/movie_info.dart';
+import 'package:movie_buff/widgets/movie_overview.dart';
 import 'package:movie_buff/widgets/now_playing.dart';
 import 'package:movie_buff/widgets/owners.dart';
 import 'package:movie_buff/widgets/search_movies.dart';
@@ -20,6 +22,7 @@ import 'package:movie_buff/widgets/similar_movies.dart';
 import 'package:movie_buff/widgets/trending_persons.dart';
 import 'package:rating_dialog/rating_dialog.dart';
 
+import 'favourites.dart';
 import 'movie_inquiry.dart';
 
 class MovieDetailInquiryScreen extends StatefulWidget {
@@ -42,6 +45,7 @@ class _MovieDetailInquiryScreenState extends State<MovieDetailInquiryScreen> {
   int i = 0;
   bool error = false;
   late double rating = 0;
+  late double favo = 0;
   late String comment = "";
 
   @override
@@ -100,25 +104,94 @@ class _MovieDetailInquiryScreenState extends State<MovieDetailInquiryScreen> {
     }
   }
 
+  _getfavoIdGenValue(){
+      _dbref.child('favo_id_gen').child("key_val").child("sequence").once().then((DataSnapshot dataSnapshot){
+        print("read once - "+ dataSnapshot.value.toString());
+        setState(() {
+          if (dataSnapshot.value.toString()!=null) {
+            idgenVal = dataSnapshot.value.toString();
+          }
+
+        });
+
+        addWishList();
+      });
+  }
+
+  addWishList() {
+    try {
+      print("idgen_val: "+ idgenVal);
+      if (idgenVal!=null && idgenVal!="" && idgenVal!="null") {
+        idgenVal = (int.parse(idgenVal)+1).toString();
+        AuthenticationService.authUtil.updateFavoIdGenerator(int.parse(idgenVal), int.parse(idgenVal));
+      } else {
+        AuthenticationService.authUtil.createFavoIdGenerator();
+        idgenVal = "1";
+      }
+
+      final now = new DateTime.now();
+      String formatter = DateFormat('yMd').format(now);
+
+      var ratingTbl = _dbref.child("favourites");
+      ratingTbl.child(idgenVal).set(
+          {
+            'name': user.name,
+            'username': user.email,
+            'date': formatter,
+            'movie_name': movie.movieTitle,
+            'movie_id': movie.id,
+            'trending_status': movie.trendingStatus,
+            'coverImage': movie.coverImage,
+            'front_image': movie.frontImage,
+            'vote_coverage': movie.voteCoverage,
+            'key_val': idgenVal
+          }
+      );
+      ratingTbl.push();
+    } catch (error, stacktrace) {
+      print("Unhandled exception occurred during firebase invoke : error => $error stackTrace => $stacktrace");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    print("ssssssssssssssssssssss");
-    print("https://image.tmdb.org/t/p/original" +
-        movie.coverImage);
-
     return Scaffold(
       backgroundColor: Theme.Colors.mainColor,
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.green,
-        onPressed: (){
-          _showRatingMovieDialog();
-        },
-        child: Icon(Icons.rate_review),
+
+      floatingActionButton: SpeedDial(
+          icon: Icons.add_reaction,
+          backgroundColor: Colors.green,
+          children: [
+            SpeedDialChild(
+              child: const Icon(Icons.rate_review),
+              label: 'Rate and Review',
+              backgroundColor: Colors.lightGreen,
+              onTap: () {_showRatingMovieDialog();},
+            ),
+            SpeedDialChild(
+              child: const Icon(EvaIcons.heart),
+              label: 'Add to Favorites',
+              backgroundColor: Colors.lightGreen,
+              onTap: () {_showConfirmDialog("Are you sure, You want add "
+                  + movie.movieTitle +" to favorites?");},
+            ),
+          ]
       ),
       appBar: AppBar(
         backgroundColor: Theme.Colors.mainColor,
         centerTitle: true,
-        leading: Icon(EvaIcons.menu2Outline, color: Colors.white,),
+        leading: IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      MovieInquiry(user: user,),
+                ),
+              );
+            },
+            icon: Icon(EvaIcons.arrowBack, color: Colors.white,)
+        ),
         title: Text(
                   movie.movieTitle,
                   style: TextStyle(fontSize: 12.0, fontWeight: FontWeight.bold),
@@ -129,21 +202,22 @@ class _MovieDetailInquiryScreenState extends State<MovieDetailInquiryScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        MovieInquiry(user: user,),
+                      builder: (context) =>
+                          Favourites(user: user,),
                   ),
                 );
               },
-              icon: Icon(EvaIcons.arrowBack, color: Colors.white,)
+              icon: Icon(EvaIcons.heart, color: Colors.white,)
           )
         ],
       ),
       body: ListView(
         children: <Widget>[
-          MovieCover(movie: movie),
+          MovieCover(movie: movie, user: user,),
+          MovieOverview(overviewInfo: movie.overview),
           MovieInfomation(id: movie.id),
           Owners(id: movie.id),
-          SimilarMovies(id: movie.id),
+          SimilarMovies(id: movie.id, user: user,),
           MovieBuffRating(id: movie.id, user: user,),
         ],
       ),
@@ -201,11 +275,18 @@ class _MovieDetailInquiryScreenState extends State<MovieDetailInquiryScreen> {
       barrierDismissible: true, // user must tap button!
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Error'),
+          title: const Text('Error',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              decorationStyle: TextDecorationStyle.solid,
+            ),),
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                Text(msg),
+                Text(msg, style: TextStyle(
+                  fontWeight: FontWeight.w400,
+                  decorationStyle: TextDecorationStyle.solid,
+                ),),
               ],
             ),
           ),
@@ -213,6 +294,51 @@ class _MovieDetailInquiryScreenState extends State<MovieDetailInquiryScreen> {
             TextButton(
               child: const Text('Ok'),
               onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showConfirmDialog(String msg) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: true, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Add To Favorites',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                decorationStyle: TextDecorationStyle.solid,
+            ),),
+          backgroundColor: Colors.white,
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(msg, style: TextStyle(
+                  fontWeight: FontWeight.w400,
+                  decorationStyle: TextDecorationStyle.solid,
+                ),),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'OK'),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              child: const Text('Add', style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  decorationStyle: TextDecorationStyle.solid,
+                  decorationColor: Colors.blue
+              ),),
+              onPressed: () {
+                _getfavoIdGenValue();
                 Navigator.of(context).pop();
               },
             ),

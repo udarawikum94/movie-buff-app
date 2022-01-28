@@ -15,7 +15,8 @@ class MovieMain {
     id = mapObj['id'];
     //}
 
-    trendingStatus = mapObj['popularity'];
+
+    trendingStatus = double.parse(mapObj['popularity'].toString());
     movieTitle = mapObj['title'];
     if(mapObj['backdrop_path']!=null) {
       coverImage = mapObj['backdrop_path'];

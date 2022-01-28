@@ -2,17 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:movie_buff/bloc/get_now_playing_bloc.dart';
 import 'package:movie_buff/model/movie_main.dart';
+import 'package:movie_buff/model/user.dart';
 import 'package:movie_buff/response/movie_main_response.dart';
+import 'package:movie_buff/screen/movie_video.dart';
 import 'package:page_indicator/page_indicator.dart';
 
 import 'package:movie_buff/screen/color_theme.dart' as Theme;
 
 class NowPlaying extends StatefulWidget {
+  final User user;
+  NowPlaying({Key? key, required this.user}) : super(key: key);
   @override
-  _NowPlayingState createState() => _NowPlayingState();
+  _NowPlayingState createState() => _NowPlayingState(user);
 }
 
 class _NowPlayingState extends State<NowPlaying> {
+  final User user;
+  _NowPlayingState(this.user);
+
   PageController pageController =
       PageController(viewportFraction: 1, keepPage: true);
 
@@ -106,7 +113,15 @@ class _NowPlayingState extends State<NowPlaying> {
             itemCount: movies.take(5).length,
             itemBuilder: (context, index) {
               return GestureDetector(
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          MovieVideo(movie: movies[index], user: user,),
+                    ),
+                  );
+                },
                 child: Stack(
                   children: <Widget>[
                     Hero(

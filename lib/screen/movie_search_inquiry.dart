@@ -53,7 +53,7 @@ class _MovieSearchInquiryState extends State<MovieSearchInquiry> {
       ),
       body: ListView(
         children: <Widget>[
-          NowPlaying(),
+          NowPlaying(user: user),
           SearchMoviesDetails(name: name, user: user,),
         ],
       ),
